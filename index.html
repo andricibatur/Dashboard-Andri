@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard File HTML</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>/* Gaya minimal modern */</style>
+</head>
+<body>
+  <h1>📂 Dashboard HTML Inul</h1>
+  
+  <input type="text" id="search" placeholder="Cari file HTML..." />
+  <div id="fileList"></div>
+
+  <h3>📌 File Favorit</h3>
+  <ul id="favorites"></ul>
+
+  <h3>➕ Menu Tambahan</h3>
+  <button onclick="openMenu('addNote')">📝 Catatan</button>
+  <button onclick="openMenu('schedule')">📅 Jadwal Buka</button>
+  <button onclick="exportJSON()">📤 Ekspor</button>
+  <button onclick="importJSON()">📥 Impor</button>
+
+  <!-- iframe preview -->
+  <iframe id="preview" style="width:100%; height:400px;"></iframe>
+
+  <script>
+    // JS akan memuat file HTML dari repositori GitHub
+    // Gunakan fetch GitHub API atau langsung link mentah (raw.githubusercontent.com)
+    // Simpan bookmark di IndexedDB
+  </script>
+</body>
+</html>
