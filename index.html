@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tabungan Sistem ID</title>
+  <style>
+    body { font-family: sans-serif; padding: 10px; background: #f9f9f9; }
+    input, button, select, textarea { margin: 5px 0; padding: 6px; width: 100%; }
+    .card { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 0 5px #ccc; }
+    .flex { display: flex; gap: 5px; }
+    .flex > * { flex: 1; }
+    .right { text-align: right; }
+  </style>
+</head>
+<body>
+  <h2>📁 Tabungan Sistem ID</h2>
+
+  <div class="card">
+    <h3>Tambah ID</h3>
+    <input id="inputId" placeholder="ID Unik">
+    <input id="inputNama" placeholder="Nama">
+    <input id="inputKet" placeholder="Keterangan">
+    <button onclick="tambahID()">➕ Tambah</button>
+  </div>
+
+  <div id="dataContainer"></div>
+
+  <script>
+    let db;
+    const request = indexedDB.open("TabunganDB", 1);
+
+    request.onupgradeneeded = function(event) {
+      db = event.target.result;
+      const store = db.createObjectStore("tabungan", { keyPath: "id" });
+      store.createIndex("id", "id", { unique: true });
+    };
+
+    request.onsuccess = function(event) {
+      db = event.target.result;
+      tampilkanData();
+    };
+
+    function tambahID() {
+      const id = inputId.value.trim();
+      const nama = inputNama.value.trim();
+      const ket = inputKet.value.trim();
+      if (!id || !nama) return alert("ID dan Nama wajib diisi");
+
+      const tx = db.transaction("tabungan", "readwrite");
+      const store = tx.objectStore("tabungan");
+      store.add({ id, nama, ket, saldo: 0, transaksi: [] });
+      tx.oncomplete = () => {
+        inputId.value = inputNama.value = inputKet.value = "";
+        tampilkanData();
+      };
+    }
+
+    function tampilkanData() {
+      const tx = db.transaction("tabungan", "readonly");
+      const store = tx.objectStore("tabungan");
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const data = req.result;
+        dataContainer.innerHTML = "";
+        data.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "card";
+          div.innerHTML = `
+            <h3>${item.nama} (${item.id})</h3>
+            <p>${item.ket}</p>
+            <p><b>Saldo:</b> Rp ${item.saldo.toLocaleString()}</p>
+            <div class="flex">
+              <input type="number" placeholder="Nominal" id="inputNom${item.id}">
+              <select id="aksi${item.id}">
+                <option value="setor">Setor</option>
+                <option value="tarik">Tarik</option>
+              </select>
+              <button onclick="transaksi('${item.id}')">💰 Simpan</button>
+            </div>
+            <button onclick="cetak('${item.id}')">🖨️ Print</button>
+            <details><summary>Riwayat</summary>
+              <ul>${item.transaksi.map(t => 
+                `<li>${t.waktu} - ${t.jenis.toUpperCase()} Rp${t.nominal.toLocaleString()}</li>`
+              ).join("")}</ul>
+            </details>
+          `;
+          dataContainer.appendChild(div);
+        });
+      };
+    }
+
+    function transaksi(id) {
+      const nominal = +document.getElementById(`inputNom${id}`).value;
+      const jenis = document.getElementById(`aksi${id}`).value;
+      if (!nominal || nominal <= 0) return alert("Nominal tidak valid");
+
+      const tx = db.transaction("tabungan", "readwrite");
+      const store = tx.objectStore("tabungan");
+      const req = store.get(id);
+      req.onsuccess = () => {
+        const data = req.result;
+        if (jenis === "tarik" && data.saldo < nominal) return alert("Saldo tidak cukup");
+
+        const waktu = new Date().toLocaleString();
+        data.transaksi.push({ waktu, jenis, nominal });
+        data.saldo += jenis === "setor" ? nominal : -nominal;
+        store.put(data);
+        tx.oncomplete = tampilkanData;
+      };
+    }
+
+    function cetak(id) {
+      const tx = db.transaction("tabungan", "readonly");
+      const store = tx.objectStore("tabungan");
+      const req = store.get(id);
+      req.onsuccess = () => {
+        const data = req.result;
+        let teks = `TABUNGAN\nID: ${data.id}\nNama: ${data.nama}\nSaldo: Rp${data.saldo.toLocaleString()}\n\nRiwayat:\n`;
+        data.transaksi.forEach(t => {
+          teks += `${t.waktu} | ${t.jenis.toUpperCase()} | Rp${t.nominal.toLocaleString()}\n`;
+        });
+        window.location.href = `rawbt:${encodeURIComponent(teks)}`;
+      };
+    }
+  </script>
+</body>
+</html>
