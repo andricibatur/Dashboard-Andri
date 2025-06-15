@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tabungan Sistem ID</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom, #f0f8ff, #e6f7ff);
+      color: #333;
+      padding: 20px;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      padding: 20px;
+    }
+    
+    header {
+      text-align: center;
+      padding: 20px 0;
+      background: linear-gradient(135deg, #4b6cb7, #182848);
+      color: white;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+    
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 15px 0;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+      border: 1px solid #e0e7ff;
+    }
+    
+    h2, h3 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e0e7ff;
+    }
+    
+    input, button, select {
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      width: 100%;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #4b6cb7;
+      box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.1);
+    }
+    
+    button {
+      background: linear-gradient(to right, #4b6cb7, #182848);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+    }
+    
+    .flex { 
+      display: flex; 
+      gap: 10px; 
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .flex > * { 
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    .saldo-info {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin: 15px 0;
+      padding: 12px;
+      background: #f8f9ff;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #e0e7ff;
+    }
+    
+    .saldo-info span {
+      color: #27ae60;
+      font-size: 1.4rem;
+    }
+    
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    
+    .search-container {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    
+    .search-container input {
+      padding-left: 45px;
+      font-size: 16px;
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #7f8c8d;
+      font-size: 18px;
+    }
+    
+    .btn-export {
+      background: linear-gradient(to right, #27ae60, #219653);
+    }
+    
+    .btn-import {
+      background: linear-gradient(to right, #e67e22, #d35400);
+    }
+    
+    .transaction-history {
+      margin-top: 15px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding: 15px;
+      background: #f8f9ff;
+      border-radius: 8px;
+      border: 1px solid #e0e7ff;
+    }
+    
+    .transaction-history ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    
+    .transaction-history li {
+      padding: 10px;
+      border-bottom: 1px solid #e0e7ff;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .transaction-history li:last-child {
+      border-bottom: none;
+    }
+    
+    .setor { 
+      color: #27ae60;
+      font-weight: bold;
+    }
+    
+    .tarik { 
+      color: #e74c3c;
+      font-weight: bold;
+    }
+    
+    .trans-time {
+      font-size: 0.9rem;
+      color: #7f8c8d;
+    }
+    
+    .no-data {
+      text-align: center;
+      padding: 25px;
+      color: #7f8c8d;
+      font-style: italic;
+      font-size: 1.1rem;
+    }
+    
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      width: 100%;
+    }
+    
+    .file-input-wrapper input[type=file] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .btn-print {
+      background: linear-gradient(to right, #3498db, #2980b9);
+    }
+    
+    .btn-delete {
+      background: linear-gradient(to right, #e74c3c, #c0392b);
+    }
+    
+    .btn-transaction {
+      background: linear-gradient(to right, #9b59b6, #8e44ad);
+    }
+    
+    .notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(39, 174, 96, 0.95);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 50px;
+      font-weight: bold;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      z-index: 1000;
+      animation: slideIn 0.3s ease-out, fadeOut 0.5s ease-in 2.5s forwards;
+    }
+    
+    @keyframes slideIn {
+      from { top: -50px; opacity: 0; }
+      to { top: 20px; opacity: 1; }
+    }
+    
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; visibility: hidden; }
+    }
+    
+    @media (max-width: 600px) {
+      .flex {
+        flex-direction: column;
+      }
+      
+      .toolbar {
+        flex-direction: column;
+      }
+      
+      .container {
+        padding: 15px;
+      }
+      
+      header {
+        padding: 15px;
+      }
+      
+      h1 {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📁 Tabungan Sistem ID</h1>
+      <div class="subtitle">Kelola tabungan dengan mudah dan efisien</div>
+    </header>
+
+    <div class="card">
+      <h2>Tambah ID Baru</h2>
+      <input id="inputId" placeholder="ID Unik (Contoh: ID001)" autocomplete="off">
+      <input id="inputNama" placeholder="Nama (Contoh: Budi)" autocomplete="off">
+      <input id="inputKet" placeholder="Keterangan (Contoh: Tabungan Pendidikan)" autocomplete="off">
+      <button onclick="tambahID()">➕ Tambah ID</button>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-export" onclick="exportData()">📤 Export Data</button>
+      <div class="file-input-wrapper">
+        <button class="btn-import">📥 Import Data</button>
+        <input type="file" id="importFile" accept=".json" onchange="importData(event)">
+      </div>
+    </div>
+
+    <div class="search-container">
+      <span class="search-icon">🔍</span>
+      <input id="searchInput" placeholder="Cari berdasarkan ID, Nama, atau Keterangan..." autocomplete="off">
+    </div>
+
+    <div id="dataContainer" class="data-container">
+      <div class="no-data">Belum ada data tabungan. Silakan tambah ID baru.</div>
+    </div>
+  </div>
+
+  <script>
+    let db;
+    const request = indexedDB.open("TabunganDB", 2);
+
+    request.onerror = function(event) {
+      console.error("Database error: ", event.target.error);
+      showNotification("Terjadi kesalahan saat membuka database");
+    };
+
+    request.onupgradeneeded = function(event) {
+      db = event.target.result;
+      if (!db.objectStoreNames.contains("tabungan")) {
+        const store = db.createObjectStore("tabungan", { keyPath: "id" });
+        store.createIndex("id", "id", { unique: true });
+      }
+    };
+
+    request.onsuccess = function(event) {
+      db = event.target.result;
+      tampilkanData();
+      
+      // Tambahkan event listener untuk input pencarian
+      document.getElementById('searchInput').addEventListener('input', tampilkanData);
+    };
+
+    function tambahID() {
+      const id = inputId.value.trim();
+      const nama = inputNama.value.trim();
+      const ket = inputKet.value.trim();
+      
+      if (!id) {
+        showNotification("ID harus diisi!");
+        inputId.focus();
+        return;
+      }
+      
+      if (!nama) {
+        showNotification("Nama harus diisi!");
+        inputNama.focus();
+        return;
+      }
+
+      const tx = db.transaction("tabungan", "readwrite");
+      const store = tx.objectStore("tabungan");
+      
+      // Cek apakah ID sudah ada
+      const req = store.get(id);
+      req.onsuccess = function() {
+        if (req.result) {
+          showNotification(`ID ${id} sudah digunakan`);
+          return;
+        }
+        
+        // Jika ID belum ada, tambahkan data baru
+        store.add({ 
+          id, 
+          nama, 
+          ket, 
+          saldo: 0, 
+          transaksi: [] 
+        });
+        
+        tx.oncomplete = () => {
+          inputId.value = inputNama.value = inputKet.value = "";
+          tampilkanData();
+          showNotification(`ID ${id} untuk ${nama} berhasil ditambahkan`);
+        };
+        
+        tx.onerror = function(event) {
+          console.error("Error adding data: ", event.target.error);
+          showNotification("Gagal menambahkan ID");
+        };
+      };
+    }
+
+    function tampilkanData() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      
+      const tx = db.transaction("tabungan", "readonly");
+      const store = tx.objectStore("tabungan");
+      const req = store.getAll();
+      
+      req.onsuccess = () => {
+        let data = req.result;
+        
+        // Filter data berdasarkan input pencarian
+        if (searchTerm) {
+          data = data.filter(item => 
+            item.id.toLowerCase().includes(searchTerm) || 
+            item.nama.toLowerCase().includes(searchTerm) ||
+            (item.ket && item.ket.toLowerCase().includes(searchTerm))
+          );
+        }
+        
+        dataContainer.innerHTML = "";
+        
+        if (data.length === 0) {
+          dataContainer.innerHTML = `<div class="no-data">Tidak ada data tabungan yang cocok dengan pencarian</div>`;
+          return;
+        }
+        
+        data.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "card";
+          div.innerHTML = `
+            <h3>${item.nama} <small>(${item.id})</small></h3>
+            <p>${item.ket || '-'}</p>
+            <div class="saldo-info">Saldo: <span>Rp ${item.saldo.toLocaleString('id-ID')}</span></div>
+            
+            <div class="flex">
+              <input type="number" placeholder="Nominal" id="inputNom${item.id}" min="1">
+              <select id="aksi${item.id}">
+                <option value="setor">Setor</option>
+                <option value="tarik">Tarik</option>
+              </select>
+              <button class="btn-transaction" onclick="transaksi('${item.id}')">💰 Simpan Transaksi</button>
+            </div>
+            
+            <div class="action-buttons">
+              <button class="btn-print" onclick="cetak('${item.id}')">🖨️ Cetak Riwayat</button>
+            </div>
+            
+            <details>
+              <summary>Riwayat Transaksi (${item.transaksi.length})</summary>
+              <div class="transaction-history">
+                ${item.transaksi.length > 0 ? 
+                  `<ul>${item.transaksi.map(t => 
+                    `<li>
+                      <span class="trans-time">${t.waktu}</span>
+                      <span class="${t.jenis}">${t.jenis.toUpperCase()} Rp${t.nominal.toLocaleString('id-ID')}</span>
+                    </li>`
+                  ).reverse().join("")}</ul>` : 
+                  `<p class="no-data">Belum ada transaksi</p>`
+                }
+              </div>
+            </details>
+          `;
+          dataContainer.appendChild(div);
+        });
+      };
+      
+      req.onerror = function() {
+        dataContainer.innerHTML = `<div class="no-data">Gagal memuat data</div>`;
+      };
+    }
+
+    function transaksi(id) {
+      const nominalInput = document.getElementById(`inputNom${id}`);
+      const nominal = +nominalInput.value;
+      const jenis = document.getElementById(`aksi${id}`).value;
+      
+      if (!nominal || nominal <= 0) {
+        showNotification("Nominal harus lebih dari 0");
+        nominalInput.focus();
+        return;
+      }
+
+      const tx = db.transaction("tabungan", "readwrite");
+      const store = tx.objectStore("tabungan");
+      const req = store.get(id);
+      
+      req.onsuccess = () => {
+        const data = req.result;
+        if (jenis === "tarik" && data.saldo < nominal) {
+          showNotification("Saldo tidak cukup!");
+          return;
+        }
+
+        const waktu = new Date().toLocaleString();
+        data.transaksi.push({ waktu, jenis, nominal });
+        data.saldo += jenis === "setor" ? nominal : -nominal;
+        
+        store.put(data);
+        
+        tx.oncomplete = () => {
+          // Reset input nominal
+          nominalInput.value = "";
+          
+          // Tampilkan notifikasi
+          showNotification(
+            jenis === "setor" 
+              ? `Berhasil setor Rp${nominal.toLocaleString('id-ID')}` 
+              : `Berhasil tarik Rp${nominal.toLocaleString('id-ID')}`
+          );
+          
+          tampilkanData();
+        };
+        
+        tx.onerror = function(event) {
+          console.error("Transaction error: ", event.target.error);
+          showNotification("Gagal menyimpan transaksi");
+        };
+      };
+    }
+
+    function cetak(id) {
+      const tx = db.transaction("tabungan", "readonly");
+      const store = tx.objectStore("tabungan");
+      const req = store.get(id);
+      
+      req.onsuccess = () => {
+        const data = req.result;
+        let teks = `TABUNGAN SISTEM ID\n`;
+        teks += `================================\n`;
+        teks += `ID        : ${data.id}\n`;
+        teks += `Nama      : ${data.nama}\n`;
+        teks += `Keterangan: ${data.ket || '-'}\n`;
+        teks += `Saldo     : Rp ${data.saldo.toLocaleString('id-ID')}\n`;
+        teks += `================================\n`;
+        teks += `RIWAYAT TRANSAKSI:\n\n`;
+        
+        data.transaksi.forEach(t => {
+          teks += `${t.waktu} | ${t.jenis.toUpperCase()} | Rp${t.nominal.toLocaleString('id-ID')}\n`;
+        });
+        
+        teks += `================================\n`;
+        teks += `Dicetak pada: ${new Date().toLocaleString()}`;
+        
+        // Gunakan rawbt: untuk mencetak seperti versi asli
+        window.location.href = `rawbt:${encodeURIComponent(teks)}`;
+      };
+    }
+
+    // Fungsi untuk export data ke JSON
+    function exportData() {
+      const tx = db.transaction("tabungan", "readonly");
+      const store = tx.objectStore("tabungan");
+      const req = store.getAll();
+      
+      req.onsuccess = () => {
+        const data = req.result;
+        if (data.length === 0) {
+          showNotification("Tidak ada data untuk di-export");
+          return;
+        }
+        
+        const jsonData = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tabungan-sistem-id-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showNotification(`Data berhasil di-export (${data.length} entri)`);
+      };
+    }
+
+    // Fungsi untuk import data dari JSON
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Reset input file
+      event.target.value = '';
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const jsonData = JSON.parse(e.target.result);
+          
+          if (!Array.isArray(jsonData)) {
+            throw new Error("Format file tidak valid");
+          }
+          
+          const tx = db.transaction("tabungan", "readwrite");
+          const store = tx.objectStore("tabungan");
+          
+          // Hapus semua data yang ada
+          store.clear();
+          
+          // Tambahkan data baru
+          jsonData.forEach(item => {
+            // Validasi item
+            if (item.id && item.nama) {
+              // Pastikan saldo dan transaksi ada
+              item.saldo = item.saldo || 0;
+              item.transaksi = item.transaksi || [];
+              store.add(item);
+            }
+          });
+          
+          tx.oncomplete = function() {
+            tampilkanData();
+            showNotification(`Berhasil mengimpor ${jsonData.length} entri`);
+          };
+          
+          tx.onerror = function() {
+            showNotification("Gagal mengimpor data");
+          };
+        } catch (error) {
+          console.error(error);
+          showNotification("Format file tidak valid");
+        }
+      };
+      reader.readAsText(file);
+    }
+    
+    // Fungsi untuk menampilkan notifikasi
+    function showNotification(message) {
+      // Hapus notifikasi sebelumnya jika ada
+      const oldNotif = document.querySelector('.notification');
+      if (oldNotif) oldNotif.remove();
+      
+      const notif = document.createElement('div');
+      notif.className = 'notification';
+      notif.textContent = message;
+      document.body.appendChild(notif);
+      
+      // Hapus notifikasi setelah 3 detik
+      setTimeout(() => {
+        if (notif.parentNode) {
+          notif.parentNode.removeChild(notif);
+        }
+      }, 3000);
+    }
+  </script>
+</body>
+  </html>
