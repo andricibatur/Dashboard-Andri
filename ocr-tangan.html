@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>OCR Tulisan Tangan</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    video, canvas, img {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 10px;
+      border: 1px solid #000;
+    }
+    #hasil { margin-top: 1em; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h3>📷 OCR Tulisan Tangan (Offline)</h3>
+
+<video id="video" autoplay playsinline></video>
+<button onclick="ambilGambar()">📸 Ambil Gambar</button>
+<canvas id="canvas"></canvas>
+<img id="preview" alt="Hasil Gambar">
+<div id="hasil">📝 Teks akan muncul di sini...</div>
+
+<script>
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const preview = document.getElementById('preview');
+  const hasil = document.getElementById('hasil');
+  const ctx = canvas.getContext('2d');
+
+  // Akses kamera belakang
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+    .then(stream => video.srcObject = stream)
+    .catch(err => alert("Gagal akses kamera: " + err));
+
+  // Ambil gambar dan proses OCR
+  function ambilGambar() {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataURL = canvas.toDataURL("image/png");
+    preview.src = dataURL;
+    hasil.textContent = "⏳ Memproses tulisan tangan...";
+
+    Tesseract.recognize(
+      dataURL,
+      'eng', // bisa diganti 'ind' untuk Bahasa Indonesia
+      { logger: m => console.log(m) }
+    ).then(({ data: { text } }) => {
+      hasil.textContent = "📄 Hasil OCR:\n" + text.trim();
+    }).catch(err => {
+      hasil.textContent = "❌ Gagal OCR: " + err;
+    });
+  }
+</script>
+
+</body>
+</html>
