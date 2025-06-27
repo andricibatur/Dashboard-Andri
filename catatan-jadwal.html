@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Catatan</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            text-align: center;
+            color: #222;
+        }
+        form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .notes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 kolom */
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .note {
+            background: #fff;
+            padding: 15px;
+            border-radius: 18px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-width: 170px;
+            max-width: 250px;
+            position: relative;
+            transition: transform 0.5s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            color: #fff; /* Warna teks agar tetap terlihat di latar belakang gelap */
+        }
+        .note:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        .note.zoomed {
+            transform: scale(1.5); /* Zoom effect */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1.5);
+            z-index: 1000;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+        }
+        .note strong {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        .note p {
+            font-size: 14px;
+        }
+        .blinking {
+            animation: blink 1s infinite;
+            background-color: #ffeb3b !important; /* Highlight color when blinking */
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .note-actions {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: none;
+        }
+        .note:hover .note-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .note-action {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            color: white;
+            font-size: 12px;
+        }
+        .note-action:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+        .edit-form {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            width: 80%;
+            max-width: 500px;
+        }
+        .edit-form h2 {
+            margin-top: 0;
+        }
+        .edit-form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .edit-form-buttons button {
+            flex: 1;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-note, .print-note * {
+                visibility: visible;
+            }
+            .print-note {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white;
+                color: black;
+                padding: 20px;
+                margin: 0;
+            }
+            .note-actions {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Catatan</h1>
+    <form id="noteForm">
+        <label for="noteId">ID Catatan:</label>
+        <input list="noteIdList" type="text" id="noteId" placeholder="Masukkan atau pilih ID Catatan">
+        <datalist id="noteIdList"></datalist>
+        <label for="noteContent">Isi Catatan:</label>
+        <textarea id="noteContent" placeholder="Masukkan isi catatan"></textarea>
+        <label for="noteDateTime">Tanggal & Waktu:</label>
+        <input type="datetime-local" id="noteDateTime">
+        <button type="submit">Simpan Catatan</button>
+    </form>
+    <button id="exportButton">Ekspor ke JSON</button>
+    <button id="importButton">Impor dari JSON</button>
+    <input type="file" id="importFile" accept=".json" style="display: none;">
+    <div class="notes" id="notesList"></div>
+
+    <!-- Edit Form (hidden by default) -->
+    <div class="overlay" id="editOverlay"></div>
+    <div class="edit-form" id="editForm">
+        <h2>Edit Catatan</h2>
+        <input type="hidden" id="editNoteId">
+        <label for="editNoteContent">Isi Catatan:</label>
+        <textarea id="editNoteContent" placeholder="Edit isi catatan"></textarea>
+        <label for="editNoteDateTime">Tanggal & Waktu:</label>
+        <input type="datetime-local" id="editNoteDateTime">
+        <div class="edit-form-buttons">
+            <button type="button" id="saveEditButton">Simpan</button>
+            <button type="button" id="cancelEditButton">Batal</button>
+        </div>
+    </div>
+
+    <script>
+        const dbName = "EnhancedNotesDB";
+        let db;
+
+        function initDB() {
+            const request = indexedDB.open(dbName, 1);
+
+            request.onupgradeneeded = (event) => {
+                db = event.target.result;
+                if (!db.objectStoreNames.contains("notes")) {
+                    db.createObjectStore("notes", { keyPath: "id" });
+                }
+            };
+
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                console.log("Database berhasil diinisialisasi");
+                loadNotes();
+                populateIdSuggestions();
+                startBlinkingCheck();
+            };
+
+            request.onerror = (event) => {
+                console.error("Database gagal diinisialisasi", event.target.error);
+            };
+        }
+
+        function saveNote(id, content, dateTime) {
+            const transaction = db.transaction("notes", "readwrite");
+            const store = transaction.objectStore("notes");
+            const request = store.get(id);
+
+            request.onsuccess = () => {
+                let note = request.result;
+
+                if (!note) {
+                    note = { id, content, dateTime };
+                } else {
+                    note.content += `\n${content}`;
+                    note.dateTime = dateTime;
+                }
+
+                const saveRequest = store.put(note);
+
+                saveRequest.onsuccess = () => {
+                    console.log("Catatan berhasil disimpan");
+                    loadNotes();
+                    populateIdSuggestions();
+                    clearForm();
+                };
+
+                saveRequest.onerror = (event) => {
+                    console.error("Gagal menyimpan catatan", event.target.error);
+                };
+            };
+
+            request.onerror = (event) => {
+                console.error("Gagal mengambil catatan", event.target.error);
+            };
+        }
+
+        function loadNotes() {
+            const transaction = db.transaction("notes", "readonly");
+            const store = transaction.objectStore("notes");
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const notesList = document.getElementById("notesList");
+                notesList.innerHTML = "";
+                request.result.forEach((note) => {
+                    const noteDiv = document.createElement("div");
+                    noteDiv.classList.add("note");
+                    noteDiv.style.backgroundColor = getRandomColor();
+                    noteDiv.setAttribute("data-id", note.id);
+                    noteDiv.setAttribute("data-datetime", note.dateTime);
+                    noteDiv.innerHTML = `
+                        <div class="note-actions">
+                            <button class="note-action edit-note" title="Edit">✏️</button>
+                            <button class="note-action delete-note" title="Hapus">🗑️</button>
+                            <button class="note-action print-note" title="Cetak">🖨️</button>
+                        </div>
+                        <strong>ID:</strong> ${note.id}
+                        <p>${note.content.replace(/\n/g, "<br>")}</p>
+                        <strong>Waktu:</strong> ${note.dateTime || "Tidak diatur"}
+                    `;
+                    notesList.appendChild(noteDiv);
+
+                    // Add zoom functionality
+                    noteDiv.addEventListener("click", (e) => {
+                        // Don't zoom if clicking on action buttons
+                        if (!e.target.classList.contains('note-action')) {
+                            const isZoomed = noteDiv.classList.toggle("zoomed");
+                            if (isZoomed) {
+                                // Lock scrolling when zoomed
+                                document.body.style.overflow = "hidden";
+                            } else {
+                                // Unlock scrolling
+                                document.body.style.overflow = "auto";
+                            }
+                        }
+                    });
+
+                    // Add edit button functionality
+                    noteDiv.querySelector('.edit-note').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openEditForm(note);
+                    });
+
+                    // Add delete button functionality
+                    noteDiv.querySelector('.delete-note').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (confirm(`Apakah Anda yakin ingin menghapus catatan dengan ID ${note.id}?`)) {
+                            deleteNote(note.id);
+                        }
+                    });
+
+                    // Add print button functionality
+                    noteDiv.querySelector('.print-note').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        printNote(note);
+                    });
+                });
+            };
+
+            request.onerror = (event) => {
+                console.error("Gagal memuat catatan", event.target.error);
+            };
+        }
+
+        function openEditForm(note) {
+            document.getElementById('editOverlay').style.display = 'block';
+            document.getElementById('editForm').style.display = 'block';
+            document.getElementById('editNoteId').value = note.id;
+            document.getElementById('editNoteContent').value = note.content;
+            document.getElementById('editNoteDateTime').value = note.dateTime || '';
+        }
+
+        function closeEditForm() {
+            document.getElementById('editOverlay').style.display = 'none';
+            document.getElementById('editForm').style.display = 'none';
+        }
+
+        function saveEditedNote() {
+            const id = document.getElementById('editNoteId').value;
+            const content = document.getElementById('editNoteContent').value.trim();
+            const dateTime = document.getElementById('editNoteDateTime').value;
+
+            if (!content) {
+                alert("Isi catatan tidak boleh kosong");
+                return;
+            }
+
+            const transaction = db.transaction("notes", "readwrite");
+            const store = transaction.objectStore("notes");
+            const request = store.get(id);
+
+            request.onsuccess = () => {
+                const note = request.result;
+                if (note) {
+                    note.content = content;
+                    note.dateTime = dateTime;
+                    
+                    const updateRequest = store.put(note);
+                    
+                    updateRequest.onsuccess = () => {
+                        closeEditForm();
+                        loadNotes();
+                    };
+                    
+                    updateRequest.onerror = (event) => {
+                        console.error("Gagal memperbarui catatan", event.target.error);
+                    };
+                }
+            };
+
+            request.onerror = (event) => {
+                console.error("Gagal mengambil catatan untuk diedit", event.target.error);
+            };
+        }
+
+        function deleteNote(id) {
+            const transaction = db.transaction("notes", "readwrite");
+            const store = transaction.objectStore("notes");
+            const request = store.delete(id);
+
+            request.onsuccess = () => {
+                console.log("Catatan berhasil dihapus");
+                loadNotes();
+                populateIdSuggestions();
+            };
+
+            request.onerror = (event) => {
+                console.error("Gagal menghapus catatan", event.target.error);
+            };
+        }
+
+        function printNote(note) {
+            const printWindow = window.open('', '', 'width=600,height=600');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Cetak Catatan - ${note.id}</title>
+                    <style>
+                        body { font-family: Arial; padding: 20px; }
+                        h1 { color: #555555; }
+                        .note-info { margin-bottom: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Catatan</h1>
+                    <div class="note-info">
+                        <strong>ID:</strong> ${note.id}<br>
+                        <strong>Waktu:</strong> ${note.dateTime || "Tidak diatur"}
+                    </div>
+                    <div class="note-content">
+                        ${note.content.replace(/\n/g, '<br>')}
+                    </div>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(function() {
+                                window.close();
+                            }, 1000);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        function getRandomColor() {
+            const colors = [
+                "#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#FFD133", "#33FFD1", "#A133FF"
+            ];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function populateIdSuggestions() {
+            const transaction = db.transaction("notes", "readonly");
+            const store = transaction.objectStore("notes");
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const dataList = document.getElementById("noteIdList");
+                dataList.innerHTML = "";
+                request.result.forEach((note) => {
+                    const option = document.createElement("option");
+                    option.value = note.id;
+                    dataList.appendChild(option);
+                });
+            };
+
+            request.onerror = (event) => {
+                console.error("Gagal memuat ID catatan", event.target.error);
+            };
+        }
+
+        function startBlinkingCheck() {
+            setInterval(() => {
+                const now = new Date();
+                document.querySelectorAll(".note").forEach((note) => {
+                    const noteDateTime = note.getAttribute("data-datetime");
+                    if (noteDateTime) {
+                        const noteTime = new Date(noteDateTime).getTime();
+                        const currentTime = now.getTime();
+                        if (currentTime >= noteTime) {
+                            note.classList.add("blinking");
+                        }
+                    }
+                });
+            }, 1000); // Check every second
+        }
+
+        function exportNotes() {
+            const transaction = db.transaction("notes", "readonly");
+            const store = transaction.objectStore("notes");
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const dataStr = JSON.stringify(request.result);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "notes.json";
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            request.onerror = (event) => {
+                console.error("Gagal mengekspor catatan", event.target.error);
+            };
+        }
+
+        function importNotes(file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = JSON.parse(event.target.result);
+                const transaction = db.transaction("notes", "readwrite");
+                const store = transaction.objectStore("notes");
+
+                data.forEach((note) => store.put(note));
+
+                transaction.oncomplete = () => {
+                    console.log("Catatan berhasil diimpor");
+                    loadNotes();
+                    populateIdSuggestions();
+                };
+
+                transaction.onerror = (event) => {
+                    console.error("Gagal mengimpor catatan", event.target.error);
+                };
+            };
+            reader.readAsText(file);
+        }
+
+        function clearForm() {
+            document.getElementById("noteId").value = "";
+            document.getElementById("noteContent").value = "";
+            document.getElementById("noteDateTime").value = "";
+        }
+
+        document.getElementById("noteForm").addEventListener("submit", (event) => {
+            event.preventDefault();
+            const id = document.getElementById("noteId").value.trim();
+            const content = document.getElementById("noteContent").value.trim();
+            const dateTime = document.getElementById("noteDateTime").value;
+
+            if (id && content) {
+                saveNote(id, content, dateTime);
+            } else {
+                alert("ID, isi catatan, dan waktu tidak boleh kosong");
+            }
+        });
+
+        document.getElementById("exportButton").addEventListener("click", exportNotes);
+
+        document.getElementById("importButton").addEventListener("click", () => {
+            document.getElementById("importFile").click();
+        });
+
+        document.getElementById("importFile").addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                importNotes(file);
+            }
+        });
+
+        // Edit form event listeners
+        document.getElementById("saveEditButton").addEventListener("click", saveEditedNote);
+        document.getElementById("cancelEditButton").addEventListener("click", closeEditForm);
+        document.getElementById("editOverlay").addEventListener("click", closeEditForm);
+
+        initDB();
+    </script>
+</body>
+</html>
