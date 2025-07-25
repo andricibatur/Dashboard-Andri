@@ -1,32 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>Dashboard File HTML</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>/* Gaya minimal modern */</style>
+  <meta charset="UTF-8" />
+  <title>Dashboard Utama Inul</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background: #f0f0f0;
+    }
+    h1 {
+      text-align: center;
+    }
+    .menu {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .menu a {
+      display: block;
+      background: #fff;
+      padding: 20px;
+      text-align: center;
+      text-decoration: none;
+      color: #333;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .menu a:hover {
+      transform: scale(1.05);
+      background: #e0e0e0;
+    }
+  </style>
 </head>
 <body>
-  <h1>📂 Dashboard HTML Inul</h1>
-  
-  <input type="text" id="search" placeholder="Cari file HTML..." />
-  <div id="fileList"></div>
+  <h1>📌 Dashboard Utama Inul</h1>
 
-  <h3>📌 File Favorit</h3>
-  <ul id="favorites"></ul>
-
-  <h3>➕ Menu Tambahan</h3>
-  <button onclick="openMenu('addNote')">📝 Catatan</button>
-  <button onclick="openMenu('schedule')">📅 Jadwal Buka</button>
-  <button onclick="exportJSON()">📤 Ekspor</button>
-  <button onclick="importJSON()">📥 Impor</button>
-
-  <!-- iframe preview -->
-  <iframe id="preview" style="width:100%; height:400px;"></iframe>
+  <div class="menu">
+    <a href="catatan.html">📒 Catatan</a>
+    <a href="keuangan.html">💰 Keuangan</a>
+    <a href="jadwal.html">📅 Jadwal</a>
+    <!-- Tambahkan link lain sesuai program Inul -->
+  </div>
 
   <script>
-    // JS akan memuat file HTML dari repositori GitHub
-    // Gunakan fetch GitHub API atau langsung link mentah (raw.githubusercontent.com)
-    // Simpan bookmark di IndexedDB
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        console.log('✅ Service Worker terdaftar:', reg);
+      }).catch(err => {
+        console.log('❌ Service Worker gagal:', err);
+      });
+    }
   </script>
 </body>
 </html>
