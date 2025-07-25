@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jadwal Baris Progres</title>
+
+  <!-- Tambah manifest & icon biar PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+
+  <style>
+    body { 
+      font-family: 'Roboto', Arial, sans-serif; 
+      padding: 10px; 
+      max-width: 100%;
+      overflow-x: hidden;
+      background-color: #f5f5f5;
+      font-size: 14px;
+    }
+    h1 {
+      font-size: 1.3rem;
+      color: #333;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      margin: 3px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .jadwal { 
+      border: 1px solid #ddd; 
+      padding: 8px; 
+      margin-bottom: 8px; 
+      border-radius: 6px;
+      background-color: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .progress-container { 
+      width: 100%; 
+      background: #e0e0e0; 
+      margin-top: 5px;
+      border-radius: 7px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .progress-bar { 
+      height: 15px; 
+      background: #FFC107; 
+      width: 0%; 
+      transition: width 0.5s; 
+    }
+    .kedip {
+      animation: kedip 1s infinite;
+    }
+    @keyframes kedip {
+      0% { background-color: #F44336; }
+      50% { background-color: #FF8A80; }
+      100% { background-color: #F44336; }
+    }
+    .detail {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .detail.show {
+      max-height: 500px;
+      transition: max-height 0.5s ease-in;
+    }
+    .form-group {
+      margin-bottom: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .form-group label {
+      display: inline-block;
+      width: 80px;
+      font-weight: bold;
+      font-size: 0.8rem;
+    }
+    input {
+      padding: 6px;
+      margin: 3px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 0.8rem;
+      flex-grow: 1;
+    }
+    input[type="number"] {
+      width: 60px;
+    }
+    input[type="date"] {
+      width: 120px;
+    }
+    .title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .button-container {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      justify-content: center;
+    }
+    .danger-btn {
+      background-color: #f44336;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Jadwal Baris Progres</h1>
+  <div class="button-container">
+    <button onclick="tambahJadwal()">Tambah Jadwal</button>
+    <button onclick="exportData()">Export</button>
+    <button onclick="importData()">Import</button>
+  </div>
+  <div id="jadwalContainer"></div>
+
+  <script>
+    // ==== REGISTER SERVICE WORKER ====
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        console.log('✅ Service Worker aktif:', reg);
+      }).catch(err => {
+        console.log('❌ Gagal Service Worker:', err);
+      });
+    }
+
+    let db;
+    let request = indexedDB.open("jadwalDB", 1);
+    request.onupgradeneeded = event => {
+      db = event.target.result;
+      db.createObjectStore("jadwal", { keyPath: "id", autoIncrement: true });
+    };
+    request.onsuccess = event => {
+      db = event.target.result;
+      tampilkanSemua();
+    };
+
+    function tambahJadwal() {
+      let nama = prompt("Nama?");
+      if (!nama) return;
+      let tanggal = prompt("Tanggal deadline (YYYY-MM-DD)?");
+      if (!tanggal) return;
+      let customHari = parseInt(prompt("Custom hari deadline?"));
+      if (isNaN(customHari)) return;
+      let barang = prompt("Barang?");
+      if (!barang) return;
+      let jumlah = parseInt(prompt("Jumlah?"));
+      if (isNaN(jumlah)) return;
+
+      let data = { nama, tanggal, customHari, barang, jumlah };
+      let tx = db.transaction("jadwal", "readwrite");
+      tx.objectStore("jadwal").add(data);
+      tx.oncomplete = tampilkanSemua;
+    }
+
+    function tampilkanSemua() {
+      document.getElementById("jadwalContainer").innerHTML = "";
+      let tx = db.transaction("jadwal", "readonly");
+      let store = tx.objectStore("jadwal");
+      store.openCursor().onsuccess = event => {
+        let cursor = event.target.result;
+        if (cursor) {
+          let data = cursor.value;
+          buatBaris(data);
+          cursor.continue();
+        }
+      };
+    }
+
+    function buatBaris(data) {
+      let div = document.createElement("div");
+      div.className = "jadwal";
+      div.innerHTML = `
+        <div class="title">
+          <span>${data.nama}</span>
+          <span>${data.barang} (${data.jumlah})</span>
+        </div>
+        <div class="progress-container" onclick="toggleDetail(this)">
+          <div class="progress-bar" data-id="${data.id}"></div>
+        </div>
+        <div class="detail" id="detail-${data.id}">
+          <div class="form-group">
+            <label>Nama:</label>
+            <input value="${data.nama}" onchange="editField(${data.id}, 'nama', this.value)">
+          </div>
+          <div class="form-group">
+            <label>Deadline:</label>
+            <input type="date" value="${data.tanggal}" onchange="editField(${data.id}, 'tanggal', this.value)">
+          </div>
+          <div class="form-group">
+            <label>Custom Hari:</label>
+            <input type="number" value="${data.customHari}" onchange="editField(${data.id}, 'customHari', this.value)">
+          </div>
+          <div class="form-group">
+            <label>Barang:</label>
+            <input value="${data.barang}" onchange="editField(${data.id}, 'barang', this.value)">
+          </div>
+          <div class="form-group">
+            <label>Jumlah:</label>
+            <input type="number" value="${data.jumlah}" onchange="editField(${data.id}, 'jumlah', this.value)">
+          </div>
+          <button class="danger-btn" onclick="konfirmasiSudah(${data.id})">Sudah</button>
+        </div>
+      `;
+      document.getElementById("jadwalContainer").appendChild(div);
+      updateProgress(div.querySelector(".progress-bar"), data);
+    }
+
+    function toggleDetail(element) {
+      let id = element.querySelector(".progress-bar").getAttribute("data-id");
+      let detail = document.getElementById("detail-" + id);
+      detail.classList.toggle("show");
+    }
+
+    function updateProgress(bar, data) {
+      let now = new Date();
+      let deadline = new Date(data.tanggal);
+      let totalHari = data.customHari;
+      let beda = (deadline - now) / (1000 * 60 * 60 * 24);
+      let progress = 100 - (beda / totalHari * 100);
+      progress = Math.max(0, Math.min(100, progress));
+      bar.style.width = progress + "%";
+      if (progress >= 100) {
+        bar.className = "progress-bar kedip";
+      } else if (progress >= 75) {
+        bar.style.background = "#4CAF50";
+      } else {
+        bar.style.background = "#FFC107";
+      }
+    }
+
+    function konfirmasiSudah(id) {
+      let konfirmasi = prompt("Ketik 'YA' untuk konfirmasi:");
+      if (konfirmasi && konfirmasi.toUpperCase() === "YA") {
+        sudah(id);
+      }
+    }
+
+    function sudah(id) {
+      let tx = db.transaction("jadwal", "readwrite");
+      let store = tx.objectStore("jadwal");
+      let getReq = store.get(id);
+      getReq.onsuccess = () => {
+        let data = getReq.result;
+        let nextDeadline = new Date(data.tanggal);
+        nextDeadline.setDate(nextDeadline.getDate() + parseInt(data.customHari));
+        data.tanggal = nextDeadline.toISOString().split('T')[0];
+        store.put(data);
+        tx.oncomplete = tampilkanSemua;
+      };
+    }
+
+    function editField(id, field, value) {
+      let tx = db.transaction("jadwal", "readwrite");
+      let store = tx.objectStore("jadwal");
+      let getReq = store.get(id);
+      getReq.onsuccess = () => {
+        let data = getReq.result;
+        data[field] = field === 'customHari' || field === 'jumlah' ? parseInt(value) : value;
+        store.put(data);
+      };
+    }
+
+    function exportData() {
+      let tx = db.transaction("jadwal", "readonly");
+      let store = tx.objectStore("jadwal");
+      let semua = [];
+      store.openCursor().onsuccess = event => {
+        let cursor = event.target.result;
+        if (cursor) {
+          semua.push(cursor.value);
+          cursor.continue();
+        } else {
+          let dataStr = JSON.stringify(semua);
+          let blob = new Blob([dataStr], {type: "application/json"});
+          let url = URL.createObjectURL(blob);
+          let a = document.createElement("a");
+          a.href = url;
+          a.download = "jadwal.json";
+          a.click();
+        }
+      };
+    }
+
+    function importData() {
+      let input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.onchange = e => {
+        let file = e.target.files[0];
+        let reader = new FileReader();
+        reader.onload = () => {
+          let data = JSON.parse(reader.result);
+          let tx = db.transaction("jadwal", "readwrite");
+          let store = tx.objectStore("jadwal");
+          data.forEach(item => store.put(item));
+          tx.oncomplete = tampilkanSemua;
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    setInterval(tampilkanSemua, 60000);
+  </script>
+</body>
+</html>
